@@ -277,8 +277,8 @@ class Cube:
 
 
 # Main UI component function definitions
-def draw_cube_3d(cube_state):
-    """Draw 3D visualization of the cube - optimized version"""
+def draw_cube_3d(cube_state, highlighted_face=None, animation_state=0):
+    """Draw 3D visualization of the cube with face highlighting and animation support"""
     fig = go.Figure()
     
     # Color mapping: from cube_interactive_simple.py to our COLORS dictionary
@@ -311,6 +311,10 @@ def draw_cube_3d(cube_state):
     
     factor = np.array([1.0 / N, 1.0 / N, 1])
     
+    # Calculate blinking effect based on animation state
+    is_blinking = highlighted_face is not None and animation_state < 6
+    blink_intensity = abs(np.sin(animation_state * np.pi / 3))  # 0-1 intensity for blinking
+    
     # Iterate through six faces
     for face_idx in range(6):
         M = rots[face_idx].as_rotation_matrix()
@@ -323,7 +327,10 @@ def draw_cube_3d(cube_state):
             # Calculate sticker color
             state_idx = face_idx * N * N + cubie_idx
             color_code = color_map[cube_state[state_idx] // (N * N)]
-            color = COLORS.get(color_code, '#cccccc')
+            base_color = COLORS.get(color_code, '#cccccc')
+            
+            # No color changes for highlighting - keep the original face color
+            color = base_color
             
             # Use Mesh3d to draw 3D shapes, more efficient with fill support
             sticker = stickers_t[cubie_idx]
@@ -344,7 +351,154 @@ def draw_cube_3d(cube_state):
                     opacity=1.0,
                     showlegend=False
                 )
+        )
+    
+    # Add rotation direction indicator if a face is highlighted
+    if highlighted_face is not None and is_blinking:
+        # Create a large, curved rotation arrow that clearly shows the rotation direction
+        arrow_color = '#FF00FF'  # Bright magenta for maximum visibility
+        arrow_radius = 0.8  # Size of the curved arrow
+        num_points = 20     # Number of points to make the curve smooth
+        
+        # Determine the plane and orientation for the curved arrow
+        if highlighted_face == 0:  # U face - rotate clockwise when looking down
+            # Curved arrow on top face
+            theta = np.linspace(0, 2*np.pi, num_points)
+            x = arrow_radius * np.cos(theta)
+            y = arrow_radius * np.sin(theta)
+            z = np.ones(num_points) * 1.1
+        elif highlighted_face == 1:  # D face - rotate clockwise when looking up
+            # Curved arrow on bottom face
+            theta = np.linspace(0, 2*np.pi, num_points)
+            x = arrow_radius * np.cos(theta)
+            y = -arrow_radius * np.sin(theta)  # Reverse direction for bottom face
+            z = np.ones(num_points) * -1.1
+        elif highlighted_face == 2:  # L face - rotate clockwise when looking from left
+            # Curved arrow on left face
+            theta = np.linspace(0, 2*np.pi, num_points)
+            z = arrow_radius * np.cos(theta)
+            y = arrow_radius * np.sin(theta)
+            x = np.ones(num_points) * -1.1
+        elif highlighted_face == 3:  # R face - rotate clockwise when looking from right
+            # Curved arrow on right face
+            theta = np.linspace(0, 2*np.pi, num_points)
+            z = -arrow_radius * np.cos(theta)
+            y = arrow_radius * np.sin(theta)
+            x = np.ones(num_points) * 1.1
+        elif highlighted_face == 4:  # B face - rotate clockwise when looking from back
+            # Curved arrow on back face
+            theta = np.linspace(0, 2*np.pi, num_points)
+            x = arrow_radius * np.cos(theta)
+            z = arrow_radius * np.sin(theta)
+            y = np.ones(num_points) * 1.1
+        else:  # F face (5) - rotate clockwise when looking from front
+            # Curved arrow on front face
+            theta = np.linspace(0, 2*np.pi, num_points)
+            x = -arrow_radius * np.cos(theta)
+            z = arrow_radius * np.sin(theta)
+            y = np.ones(num_points) * -1.1
+        
+        # Create animated effect - show only a segment of the arrow that moves
+        animation_progress = (animation_state % 3) / 3.0  # Cycle every 3 frames
+        start_idx = int(num_points * animation_progress)
+        end_idx = int(num_points * (animation_progress + 0.4))  # Show 40% of the curve
+        
+        if end_idx > num_points:
+            # Handle wrap-around
+            x_arrow = np.concatenate([x[start_idx:], x[:end_idx - num_points]])
+            y_arrow = np.concatenate([y[start_idx:], y[:end_idx - num_points]])
+            z_arrow = np.concatenate([z[start_idx:], z[:end_idx - num_points]])
+        else:
+            x_arrow = x[start_idx:end_idx]
+            y_arrow = y[start_idx:end_idx]
+            z_arrow = z[start_idx:end_idx]
+        
+        # Create the curved arrow trace
+        fig.add_trace(
+            go.Scatter3d(
+                x=x_arrow,
+                y=y_arrow,
+                z=z_arrow,
+                mode='lines',
+                line=dict(
+                    color=arrow_color,
+                    width=8,  # Large width for visibility
+                    dash='solid'
+                ),
+                showlegend=False
             )
+        )
+        
+        # Add an arrowhead at the end of the curve
+        if len(x_arrow) > 0:
+            arrowhead_length = 0.2
+            # Calculate direction vector at the end of the arrow
+            if len(x_arrow) > 1:
+                dir_x = x_arrow[-1] - x_arrow[-2]
+                dir_y = y_arrow[-1] - y_arrow[-2]
+                dir_z = z_arrow[-1] - z_arrow[-2]
+            else:
+                # If only one point, use the curve direction
+                dir_x = -np.sin(theta[start_idx]) if highlighted_face in [0, 1] else 0
+                dir_y = np.cos(theta[start_idx]) if highlighted_face in [2, 3] else 0
+                dir_z = np.cos(theta[start_idx]) if highlighted_face in [4, 5] else 0
+            
+            # Normalize the direction vector
+            dir_length = np.sqrt(dir_x**2 + dir_y**2 + dir_z**2)
+            if dir_length > 0:
+                dir_x /= dir_length
+                dir_y /= dir_length
+                dir_z /= dir_length
+            
+            # Create arrowhead
+            fig.add_trace(
+                go.Scatter3d(
+                    x=[x_arrow[-1], x_arrow[-1] + dir_x * arrowhead_length],
+                    y=[y_arrow[-1], y_arrow[-1] + dir_y * arrowhead_length],
+                    z=[z_arrow[-1], z_arrow[-1] + dir_z * arrowhead_length],
+                    mode='lines+markers',
+                    line=dict(color=arrow_color, width=8),
+                    marker=dict(color=arrow_color, size=10),
+                    showlegend=False
+                )
+            )
+        
+        # Add text label to identify the face being rotated
+        face_labels = ['U', 'D', 'L', 'R', 'B', 'F']
+        face_name = face_labels[highlighted_face]
+        
+        # Position and orientation for text label on each face
+        if highlighted_face == 0:  # U face
+            label_pos = [0, 0, 1.2]
+            label_orient = dict(x=0, y=0, z=0, uirevision='constant')
+        elif highlighted_face == 1:  # D face
+            label_pos = [0, 0, -1.2]
+            label_orient = dict(x=0, y=180, z=0, uirevision='constant')
+        elif highlighted_face == 2:  # L face
+            label_pos = [-1.2, 0, 0]
+            label_orient = dict(x=0, y=-90, z=0, uirevision='constant')
+        elif highlighted_face == 3:  # R face
+            label_pos = [1.2, 0, 0]
+            label_orient = dict(x=0, y=90, z=0, uirevision='constant')
+        elif highlighted_face == 4:  # B face
+            label_pos = [0, 1.2, 0]
+            label_orient = dict(x=0, y=180, z=0, uirevision='constant')
+        else:  # F face (5)
+            label_pos = [0, -1.2, 0]
+            label_orient = dict(x=0, y=0, z=0, uirevision='constant')
+        
+        # Add the text label with black color for better visibility
+        fig.add_trace(
+            go.Scatter3d(
+                x=[label_pos[0]],
+                y=[label_pos[1]],
+                z=[label_pos[2]],
+                mode='text',
+                text=[face_name],
+                textfont=dict(size=30, color='black', family='Arial Black'),
+                showlegend=False
+            )
+        )
     
     # Set 3D plot properties - optimized performance
     fig.update_layout(
@@ -915,6 +1069,12 @@ if 'play_start_time' not in st.session_state:
     st.session_state.play_start_time = time.time()
 if 'last_update_time' not in st.session_state:
     st.session_state.last_update_time = time.time()
+if 'highlighted_face' not in st.session_state:
+    st.session_state.highlighted_face = None
+if 'animation_state' not in st.session_state:
+    st.session_state.animation_state = 0
+if 'animation_timer' not in st.session_state:
+    st.session_state.animation_timer = time.time()
 
 # Auto-play logic - simplified implementation as suggested by user (moved before UI rendering)
 if st.session_state.is_playing:
@@ -942,6 +1102,23 @@ if st.session_state.is_playing:
             st.session_state.is_playing = False
             st.session_state.current_step = len(moves) - 1
 
+
+# Animation logic for face highlighting and blinking
+gif_animation_delay = 0.2  # 200ms per frame for smooth blinking
+gif_animation_frames = 6   # 3 full blinks (on-off-on-off-on-off)
+current_time = time.time()
+
+# Update animation state if a face is highlighted
+if st.session_state.highlighted_face is not None:
+    elapsed_time = current_time - st.session_state.animation_timer
+    if elapsed_time >= gif_animation_delay:
+        st.session_state.animation_state += 1
+        st.session_state.animation_timer = current_time
+        
+        # Reset animation after a certain number of frames
+        if st.session_state.animation_state >= gif_animation_frames:
+            st.session_state.highlighted_face = None  # Clear highlighted face after animation completes
+        # No more st.rerun() here to avoid race conditions
 
 # Set page title
 st.set_page_config(page_title="Rubik's Cube Teaching Bot", layout="wide")
@@ -1012,6 +1189,10 @@ selected_difficulty = st.sidebar.selectbox(
 # Case generation button
 st.sidebar.subheader("Case Generation")
 if st.sidebar.button("Generate Case"):
+    # Clear any highlighting when generating a new case
+    st.session_state.highlighted_face = None
+    st.session_state.animation_state = 0
+    
     # Initialize case generation related session states
     st.session_state.selected_case = selected_case
     st.session_state.selected_difficulty = selected_difficulty
@@ -1383,6 +1564,10 @@ if st.sidebar.button("Generate Case"):
 # Case reset button
 if 'case_generated' in st.session_state and st.session_state.case_generated:
     if st.sidebar.button("Reset Case"):
+        # Clear any highlighting when resetting the case
+        st.session_state.highlighted_face = None
+        st.session_state.animation_state = 0
+        
         # Clear case generation related session states
         if 'selected_case' in st.session_state:
             del st.session_state.selected_case
@@ -1417,15 +1602,53 @@ if 'case_generated' in st.session_state and st.session_state.case_generated:
 if 'case_generated' in st.session_state and st.session_state.case_generated:
     # Display different concept introduction based on case type
     if st.session_state.selected_case == "Action-to-operator mapping":
-        # Original Operator concept introduction
+        # Interactive Operator concept introduction
         st.markdown("## Rubik's Cube Operator Concept Introduction")
         st.write("In Rubik's Cube, an Operator refers to a basic operation on the cube. Each operator represents a specific face rotation:")
-        st.write("- **R**: Right face clockwise rotation")
-        st.write("- **L**: Left face clockwise rotation")
-        st.write("- **U**: Up face clockwise rotation")
-        st.write("- **D**: Down face clockwise rotation")
-        st.write("- **F**: Front face clockwise rotation")
-        st.write("- **B**: Back face clockwise rotation")
+        
+        # Create a 2x3 grid of buttons for face rotations
+        col1, col2, col3 = st.columns(3)
+        
+        # Face indices: 0 - U, 1 - D, 2 - L, 3 - R, 4 - B, 5 - F
+        with col1:
+            if st.button("🔄 R: Right face clockwise rotation", key="btn_r"):
+                # Clear any existing animation to prevent conflicts
+                st.session_state.highlighted_face = 3  # Right face (G)
+                st.session_state.animation_state = 0
+                st.session_state.animation_timer = time.time()
+            
+            if st.button("🔄 D: Down face clockwise rotation", key="btn_d"):
+                # Clear any existing animation to prevent conflicts
+                st.session_state.highlighted_face = 1  # Down face (Y)
+                st.session_state.animation_state = 0
+                st.session_state.animation_timer = time.time()
+        
+        with col2:
+            if st.button("🔄 L: Left face clockwise rotation", key="btn_l"):
+                # Clear any existing animation to prevent conflicts
+                st.session_state.highlighted_face = 2  # Left face (B)
+                st.session_state.animation_state = 0
+                st.session_state.animation_timer = time.time()
+            
+            if st.button("🔄 F: Front face clockwise rotation", key="btn_f"):
+                # Clear any existing animation to prevent conflicts
+                st.session_state.highlighted_face = 5  # Front face (R)
+                st.session_state.animation_state = 0
+                st.session_state.animation_timer = time.time()
+        
+        with col3:
+            if st.button("🔄 U: Up face clockwise rotation", key="btn_u"):
+                # Clear any existing animation to prevent conflicts
+                st.session_state.highlighted_face = 0  # Up face (W)
+                st.session_state.animation_state = 0
+                st.session_state.animation_timer = time.time()
+            
+            if st.button("🔄 B: Back face clockwise rotation", key="btn_b"):
+                # Clear any existing animation to prevent conflicts
+                st.session_state.highlighted_face = 4  # Back face (O)
+                st.session_state.animation_state = 0
+                st.session_state.animation_timer = time.time()
+        
         st.write("- Operators with apostrophe (like R') represent counterclockwise rotation")
     elif st.session_state.selected_case == "Identity and inverse":
         # Identity and inverse concept introduction
@@ -1466,8 +1689,48 @@ if 'case_generated' in st.session_state and st.session_state.case_generated:
     
     with col1:
         st.subheader("Rubik's Cube 3D Display")
-        fig = draw_cube_3d(st.session_state.cube.state)
-        st.plotly_chart(fig, use_container_width=True)
+        
+        # Create a placeholder for the cube to enable smooth updates
+        cube_placeholder = st.empty()
+        
+        # Update the animation state if needed, but pause during prediction questions
+        current_time = time.time()
+        is_prediction_interaction = False
+        
+        # Check if we're in prediction question context
+        # 1. If prediction options are displayed
+        if 'prediction_options' in st.session_state and st.session_state.prediction_options:
+            is_prediction_interaction = True
+        # 2. If student has selected an answer
+        if 'student_answer' in st.session_state and st.session_state.student_answer is not None:
+            is_prediction_interaction = True
+        # 3. If answer has been checked
+        if 'answer_checked' in st.session_state and st.session_state.answer_checked:
+            is_prediction_interaction = True
+        
+        if not is_prediction_interaction and st.session_state.highlighted_face is not None:
+            elapsed_time = current_time - st.session_state.animation_timer
+            if elapsed_time >= 0.2:  # Same delay as before
+                st.session_state.animation_state += 1
+                st.session_state.animation_timer = current_time
+                if st.session_state.animation_state >= 6:
+                    st.session_state.highlighted_face = None
+                    st.session_state.animation_state = 0
+        
+        # Draw and display the cube with current state
+        # During prediction interactions, freeze animation state to keep arrow consistent
+        current_animation_state = st.session_state.animation_state
+        if is_prediction_interaction:
+            # Freeze animation at the current frame to preserve arrow display
+            # Just keep the current value, don't change it
+            pass
+        
+        fig = draw_cube_3d(
+            st.session_state.cube.state,
+            highlighted_face=st.session_state.highlighted_face,
+            animation_state=current_animation_state
+        )
+        cube_placeholder.plotly_chart(fig, use_container_width=True)
     
     with col2:
         # Display randomly generated move sequence
@@ -1535,6 +1798,10 @@ if 'case_generated' in st.session_state and st.session_state.case_generated:
         
         with col_controls1:
             if st.button("Fast Backward", help="Return to initial state"):
+                # Clear any highlighting when controlling animation
+                st.session_state.highlighted_face = None
+                st.session_state.animation_state = 0
+                
                 # Execute fast backward, directly return to initial state
                 st.session_state.is_playing = False
                 st.session_state.current_step = -1
@@ -1545,6 +1812,10 @@ if 'case_generated' in st.session_state and st.session_state.case_generated:
                 
         with col_controls2:
             if st.button("Step Backward", help="Step backward"):
+                # Clear any highlighting when controlling animation
+                st.session_state.highlighted_face = None
+                st.session_state.animation_state = 0
+                
                 st.session_state.is_playing = False
                 
                 if st.session_state.current_step > -1:
@@ -1577,6 +1848,10 @@ if 'case_generated' in st.session_state and st.session_state.case_generated:
                 
         with col_controls3:
             if st.button("Step Forward", help="Step forward"):
+                # Clear any highlighting when controlling animation
+                st.session_state.highlighted_face = None
+                st.session_state.animation_state = 0
+                
                 st.session_state.is_playing = False
                 
                 # Check current sequence
@@ -1618,6 +1893,10 @@ if 'case_generated' in st.session_state and st.session_state.case_generated:
                 
         with col_controls4:
             if st.button("Fast Forward", help="Fast forward to last step"):
+                # Clear any highlighting when controlling animation
+                st.session_state.highlighted_face = None
+                st.session_state.animation_state = 0
+                
                 # Execute fast forward, directly advance to last step
                 st.session_state.is_playing = False
                 
@@ -1689,6 +1968,10 @@ if 'case_generated' in st.session_state and st.session_state.case_generated:
         
         with col_answer:
             if st.button("Check Answer"):
+                # Keep highlighting when checking answer
+                # st.session_state.highlighted_face = None
+                # st.session_state.animation_state = 0
+                
                 if 'student_answer' in st.session_state and st.session_state.student_answer is not None:
                     st.session_state.answer_checked = True
                     
@@ -1706,6 +1989,14 @@ if 'case_generated' in st.session_state and st.session_state.case_generated:
         
         with col_next:
             if st.button("Switch to Next Question"):
+                # Clear any highlighting when switching to a new question
+                st.session_state.highlighted_face = None
+                st.session_state.animation_state = 0
+                
+                # Reset answer states for new question
+                st.session_state.answer_checked = False
+                st.session_state.student_answer = None
+                
                 # Randomly decide initial cube state: 50% solved, 50% scrambled
                 use_scrambled_initial = random.choice([True, False])
                 
