@@ -35,9 +35,11 @@ An interactive web application that transforms Rubik's Cube manipulation into le
 - ✅ **Identity and Inverse Demonstrations** — Visualize reversible operations and their properties
 - ✅ **Composition and Non-Commutativity** — Explore order-dependent operation results
 - ✅ **Reusable Composites (Macro-Operators)** — Identify and reuse meaningful move sequences
-- ✅ **Adaptive Learning Paths** — Multiple difficulty levels for different learning stages
+- ✅ **Fixed Activity Cases** — 4 carefully designed cases covering key group theory concepts
 - ✅ **Predictive Assessment** — Generate questions to test understanding of group theory concepts
 - ✅ **Responsive Dashboard** — Clean, intuitive UI with real-time cube manipulation
+- ✅ **Mathematical Notation** — Proper LaTeX formatting for algebraic expressions
+- ✅ **Case-Specific Prompts** — Targeted questions and observations for each activity case
 
 ---
 
@@ -86,40 +88,7 @@ An interactive web application that transforms Rubik's Cube manipulation into le
 
 ---
 
-## 🏗️ Architecture
-
-### Three-Tier Learning Framework
-
-```
-┌─────────────────────────────────────────────┐
-│       Embodied Interaction Layer            │
-│  ┌──────────────────────────────────────┐   │
-│  │ 3D Cube Visualization                │   │
-│  │ Real-time Operation Execution         │   │
-│  │ Interactive Control Interface         │   │
-│  └──────────────────────────────────────┘   │
-└─────────────────────────────────────────────┘
-                    ↓
-┌─────────────────────────────────────────────┐
-│    Symbolic Representation Layer            │
-│  ┌──────────────────────────────────────┐   │
-│  │ Operator Mapping (Action → Symbol)     │   │
-│  │ Sequence Composition Analysis         │   │
-│  │ Inverse Operation Detection           │   │
-│  └──────────────────────────────────────┘   │
-└─────────────────────────────────────────────┘
-                    ↓
-┌─────────────────────────────────────────────┐
-│    Conceptual Learning Layer                │
-│  ┌──────────────────────────────────────┐   │
-│  │ Predictive Question Generation        │   │
-│  │ Group Property Identification        │   │
-│  │ Misconception Detection               │   │
-│  └──────────────────────────────────────┘   │
-└─────────────────────────────────────────────┘
-```
-
-### Learning Pipeline
+## 🏗️ Learning Pipeline
 
 ```
 Micro-Experiment → Prediction → Observation → Explanation → Concept Reinforcement
@@ -132,43 +101,62 @@ Micro-Experiment → Prediction → Observation → Explanation → Concept Rein
 
 ---
 
-## 📚 Learning Objectives
+## 🎯 Activity Case: From Commutators to Conjugates
 
-### LG1: Action-to-operator mapping
-Learners can treat a face turn as an **operator** and predict qualitative consequences of composing operators (e.g., "apply R then U").
+**Goal:** Verify non-commutativity and explore cycle decomposition.
 
-### LG2: Identity and inverse as testable phenomena
-Learners can recognize and explain reversibility via short experiments (e.g., $a a^{-1}$ returns to the same state), rather than memorizing "prime" notation.
+**Setup:** Start from a solved state ($e$).
 
-### LG3: Composition and non-commutativity
-Learners can generate and interpret counterexamples showing $ab \neq ba$ for cube moves, and articulate what changes (and what stays invariant) under each order.
+### 1. **Proving Non-Commutativity**
+Perform $R F'$ followed by $F' R$.
 
-### LG4: Reusable composites (macro-operators)
-Learners can identify and reuse short move sequences as meaningful units ("do this commutator"), connecting procedural chunks to algebraic composition.
+$$R F' \neq F' R$$
+
+*Prompt:* Identify the pieces that moved differently. Why does order matter?
+
+### 2. **The Commutator $C$**
+Execute the sequence $C = R F' R' F$ ("Out, Out, In, In").
+
+*Observation:* Notice that most of the cube remains fixed, but specific corners and edges are swapped.
+
+### 3. **Order of an Element**
+Repeat the sequence $C$ six times: $C^6$.
+
+$$(R F' R' F)^6 = e$$
+
+*Prompt:* Why did it take 6 cycles to return to identity? (Hint: Look at the 3-cycle of edges and 2-cycle of corners).
+
+### 4. **Conjugation (Setup Moves)**
+Apply a setup move $U$, perform the commutator $C$, then undo the setup $U'$.
+
+$$g = U (R F' R' F) U'$$
+
+*Result:* The permutation effect of $C$ is transported to a new location on the Upper face.
 
 ---
 
 ## 🧠 Tutor Functionality
 
-### 1. 🎮 **Action-to-Operator Mapping**
-- Interactive cube manipulation interface
-- Real-time translation of physical actions to symbolic operators
-- Visual feedback on operation effects
+### 1. 🎮 **Activity Case Implementation**
+- **Proving Non-Commutativity**: Demonstrate that $R F' \neq F' R$ through interactive comparison
+- **The Commutator $C$**: Execute $C = R F' R' F$ and observe its localized effect
+- **Order of an Element**: Show that $C^6 = e$ through repeated execution
+- **Conjugation**: Demonstrate $g = U C U'$ to transport commutator effects
 
-### 2. 🔄 **Identity and Inverse Operations**
-- Demonstrate reversible operation sequences
-- Visual comparison of operation and inverse operation effects
-- Test for identity preservation
+### 2. 🔄 **Interactive Cube Visualization**
+- 3D rendering of Rubik's Cube with Plotly
+- Step-by-step state transitions for each operation
+- Real-time cube manipulation with control buttons
 
-### 3. ⚡ **Composition and Non-Commutativity**
-- Compare operation sequences in different orders
-- Visualize non-commutative behavior
-- Highlight invariant properties
+### 3. ⚡ **Predictive Assessment**
+- Case-specific prediction questions about operation outcomes
+- Multiple-choice format with immediate feedback
+- Targeted prompts to reinforce conceptual understanding
 
-### 4. 🧩 **Macro-Operator Identification**
-- Recognize and label reusable move sequences
-- Demonstrate composition of complex operations
-- Connect procedural chunks to algebraic concepts
+### 4. 📐 **Mathematical Notation**
+- Proper LaTeX formatting for algebraic expressions
+- Clear presentation of group theory concepts
+- Connection between physical operations and abstract algebra
 
 ---
 
@@ -198,31 +186,33 @@ Learners can identify and reuse short move sequences as meaningful units ("do th
 
 ## 🎓 Learning Workflow
 
-### Step 1: Concept Selection
-1. Choose a learning objective (LG1-LG4)
-2. Select difficulty level (Simple, Medium, Hard)
-3. Generate a micro-experiment
+### Step 1: Case Selection
+1. Choose an activity case from the four options:
+   - Proving Non-Commutativity
+   - The Commutator C
+   - Order of an Element
+   - Conjugation
 
 ### Step 2: Predictive Exploration
-1. Observe the initial cube state
-2. Predict the outcome of operation sequences
-3. Test predictions through step-by-step execution
+1. Observe the initial cube state (always starts solved)
+2. Study the operation sequence for the selected case
+3. Predict the outcome based on the provided question
 
 ### Step 3: Interactive Manipulation
 1. Use control buttons to manipulate the cube
    - Step Forward/Backward through sequences
    - Rewind/Fast Forward to specific states
-   - Compare different operation orders
+   - Visualize each step of the operation sequence
 
 ### Step 4: Formative Assessment
 1. Answer prediction questions about operation outcomes
 2. Receive immediate feedback on responses
-3. Identify and correct misconceptions
+3. Identify and correct misconceptions through targeted prompts
 
 ### Step 5: Concept Reinforcement
 1. Review operation effects and algebraic properties
-2. Practice applying concepts to new scenarios
-3. Build reusable macro-operators
+2. Explore the mathematical concepts behind each case
+3. Connect physical cube operations to abstract group theory
 
 ---
 
@@ -237,26 +227,26 @@ app.py
 │   └── Operation sequence handling
 │
 ├── Learning Framework
-│   ├── Micro-experiment generation
+│   ├── Activity case implementation
 │   ├── Concept-based case selection
-│   ├── Difficulty level adaptation
-│   └── Predictive question engine
+│   ├── Predictive question engine
+│   └── Case-specific prompt generation
 │
 ├── Visualization Functions
 │   ├── 3D cube rendering with Plotly
 │   ├── Interactive cube manipulation
 │   ├── Operation sequence visualization
-│   └── Comparison view for non-commutativity
+│   └── Step-by-step state transitions
 │
 ├── UI Components
-│   ├── Sidebar for case selection
+│   ├── Activity case buttons (4 main cases)
 │   ├── Main cube visualization area
-│   ├── Operation control buttons
+│   ├── Operation control buttons (Step/Replay)
 │   └── Assessment question interface
 │
 └── Streamlit App
     ├── Session state management
-    ├── Two-column layout design
+    ├── Custom CSS styling
     ├── Real-time cube state updates
     └── Formative assessment interface
 ```
@@ -267,13 +257,12 @@ app.py
 
 ### Learning Parameters
 
-| Parameter | Range | Default | Effect |
-|-----------|-------|---------|--------|
-| **Case Type** | LG1-LG4 | LG1 | Learning objective focus |
-| **Difficulty Level** | Simple/Medium/Hard | Simple | Complexity of operation sequences |
-| **Sequence Length** | 2-10 | 4 | Number of operations in sequence |
-| **Initial Cube State** | Solved/Scrambled | Solved | Starting configuration |
-| **Visualization Speed** | Slow/Normal/Fast | Normal | Animation speed of operations |
+| Parameter | Value | Effect |
+|-----------|-------|--------|
+| **Activity Cases** | 4 fixed cases | Learning objective focus |
+| **Sequence Length** | Case-specific | Number of operations in sequence |
+| **Initial Cube State** | Solved | All cases start from solved configuration |
+| **Visualization** | Interactive 3D | Cube manipulation and state transitions |
 
 ### Performance Optimization
 
@@ -282,6 +271,7 @@ app.py
 > - Use modern browser (Chrome/Firefox recommended)
 > - Ensure sufficient GPU memory for 3D visualization
 > - Close other browser tabs to reduce resource usage
+> - For best experience, use a screen resolution of 1080p or higher
 
 ---
 
